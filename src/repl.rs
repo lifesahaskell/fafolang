@@ -7,7 +7,7 @@ pub fn start() {
     loop {
         println!(">>");
         if stdin().read_line(&mut scanned_line).is_ok() {
-            let mut lexer = lexer::Lexer::new(scanned_line.to_owned()).into_iter();
+            let mut lexer = lexer::Lexer::new(scanned_line.to_owned());
             let mut token = lexer.next().unwrap();
 
             while token != Token::Eof {
