@@ -144,14 +144,9 @@ impl Parser {
                         }
                     }
                 },
-                Token::Ident(value) => {
-                    println!("do we get here?");
-                    Expression::Identifier(Identifier { name: value.to_string() })
-                },
+                Token::Ident(value) => Expression::Identifier(Identifier { name: value.to_string() }),
 
                 _ => {
-
-                    println!("or do we end up here?");
                     self.errors.push(format!(
                         "expected next token to be an Expression, got {:?}",
                         self.cur_token
