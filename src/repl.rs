@@ -7,12 +7,12 @@ pub fn start() {
     loop {
         println!(">>");
         if stdin().read_line(&mut scanned_line).is_ok() {
-            let mut lexer = lexer::Lexer::new(scanned_line.to_owned());
-            let mut token = lexer.next_token().unwrap();
+            let mut lexer = lexer::Lexer::new(scanned_line.to_owned()).into_iter();
+            let mut token = lexer.next().unwrap();
 
             while token != Token::Eof {
                 println!("{:?}", token);
-                token = lexer.next_token().unwrap();
+                token = lexer.next().unwrap();
             }
         }
     }

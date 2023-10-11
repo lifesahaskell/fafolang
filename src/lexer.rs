@@ -1,4 +1,6 @@
 use core::fmt;
+
+#[derive(Clone)]
 pub struct Lexer {
     input: Vec<u8>,
     position: usize,
@@ -19,55 +21,55 @@ impl Lexer {
         lex
     }
 
-    pub fn next_token(&mut self) -> Result<Token, ()> {
-        self.skip_whitespace();
+    // pub fn next_token(&mut self) -> Result<Token, ()> {
+    //     self.skip_whitespace();
 
-        let token = match self.ch {
-            b'{' => Token::LBrace,
-            b'}' => Token::RBrace,
-            b'(' => Token::LParen,
-            b')' => Token::RParen,
-            b',' => Token::Comma,
-            b';' => Token::Semicolon,
-            b'+' => Token::Plus,
-            b'-' => Token::Minus,
-            b'!' => {
-                if self.peek() == b'=' {
-                    self.read_char();
-                    Token::NotEqual
-                } else {
-                    Token::Bang
-                }
-            }
-            b'<' => Token::LessThan,
-            b'>' => Token::GreaterThan,
-            b'*' => Token::Asterisk,
-            b'/' => Token::ForwardSlash,
-            b'=' => {
-                if self.peek() == b'=' {
-                    self.read_char();
-                    Token::Equal
-                } else {
-                    Token::Assign
-                }
-            }
-            b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
-                let ident = self.read_ident();
-                return Ok(match ident.as_str() {
-                    "fn" => Token::Function,
-                    "let" => Token::Let,
-                    "return" => Token::Return,
-                    _ => Token::Ident(ident),
-                });
-            }
-            b'0'..=b'9' => return Ok(Token::Int(self.read_int())),
-            0 => Token::Eof,
-            _ => unreachable!("unable to lex symbol."),
-        };
+    //     let token = match self.ch {
+    //         b'{' => Token::LBrace,
+    //         b'}' => Token::RBrace,
+    //         b'(' => Token::LParen,
+    //         b')' => Token::RParen,
+    //         b',' => Token::Comma,
+    //         b';' => Token::Semicolon,
+    //         b'+' => Token::Plus,
+    //         b'-' => Token::Minus,
+    //         b'!' => {
+    //             if self.peek() == b'=' {
+    //                 self.read_char();
+    //                 Token::NotEqual
+    //             } else {
+    //                 Token::Bang
+    //             }
+    //         }
+    //         b'<' => Token::LessThan,
+    //         b'>' => Token::GreaterThan,
+    //         b'*' => Token::Asterisk,
+    //         b'/' => Token::ForwardSlash,
+    //         b'=' => {
+    //             if self.peek() == b'=' {
+    //                 self.read_char();
+    //                 Token::Equal
+    //             } else {
+    //                 Token::Assign
+    //             }
+    //         }
+    //         b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
+    //             let ident = self.read_ident();
+    //             return Ok(match ident.as_str() {
+    //                 "fn" => Token::Function,
+    //                 "let" => Token::Let,
+    //                 "return" => Token::Return,
+    //                 _ => Token::Ident(ident),
+    //             });
+    //         }
+    //         b'0'..=b'9' => return Ok(Token::Int(self.read_int())),
+    //         0 => Token::Eof,
+    //         _ => unreachable!("unable to lex symbol."),
+    //     };
 
-        self.read_char();
-        Ok(token)
-    }
+    //     self.read_char();
+    //     Ok(token)
+    // }
 
     fn peek(&self) -> u8 {
         if self.read_position >= self.input.len() {
@@ -112,6 +114,61 @@ impl Lexer {
         }
     }
 }
+
+impl Iterator for Lexer {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.skip_whitespace();
+
+        let token = match self.ch {
+            b'{' => Token::LBrace,
+            b'}' => Token::RBrace,
+            b'(' => Token::LParen,
+            b')' => Token::RParen,
+            b',' => Token::Comma,
+            b';' => Token::Semicolon,
+            b'+' => Token::Plus,
+            b'-' => Token::Minus,
+            b'!' => {
+                if self.peek() == b'=' {
+                    self.read_char();
+                    Token::NotEqual
+                } else {
+                    Token::Bang
+                }
+            }
+            b'<' => Token::LessThan,
+            b'>' => Token::GreaterThan,
+            b'*' => Token::Asterisk,
+            b'/' => Token::ForwardSlash,
+            b'=' => {
+                if self.peek() == b'=' {
+                    self.read_char();
+                    Token::Equal
+                } else {
+                    Token::Assign
+                }
+            }
+            b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
+                let ident = self.read_ident();
+                return Some(match ident.as_str() {
+                    "fn" => Token::Function,
+                    "let" => Token::Let,
+                    "return" => Token::Return,
+                    _ => Token::Ident(ident),
+                });
+            }
+            b'0'..=b'9' => return Some(Token::Int(self.read_int())),
+            0 => Token::Eof,
+            _ => unreachable!("unable to lex symbol."),
+        };
+
+        self.read_char();
+        Some(token)
+    }
+}
+
 
 #[allow(dead_code)]
 #[derive(Debug, Default, PartialEq, Clone)]
@@ -184,7 +241,7 @@ mod test {
     use super::{Lexer, Token};
 
     #[test]
-    fn get_next_token() -> Result<(), ()> {
+    fn get_next_token() {
         let input = r#"let five = 5;
         let ten = 10;
         
@@ -192,7 +249,9 @@ mod test {
             x + y;
         };
         
-        let result = add(five, ten);"#;
+        let result = add(five, ten);
+        
+        foobar;"#;
         let mut lexer = Lexer::new(input.into());
 
         let tokens = vec![
@@ -232,15 +291,15 @@ mod test {
             Token::Ident("ten".to_string()),
             Token::RParen,
             Token::Semicolon,
+            Token::Ident("foobar".to_string()),
+            Token::Semicolon,
             Token::Eof,
         ];
 
         for token in tokens {
-            let next_token = lexer.next_token()?;
-            println!("expected {:?}, received {:?}", token, next_token);
-            assert_eq!(token, next_token);
+            let cur_token = lexer.next().unwrap();
+            println!("expected {:?}, received {:?}", token, cur_token);
+            assert_eq!(token, cur_token);
         }
-
-        Ok(())
     }
 }

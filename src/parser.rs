@@ -27,7 +27,7 @@ impl Parser {
 
     fn next_token(&mut self) {
         self.cur_token = self.peek_token.clone();
-        self.peek_token = self.lexer.next_token().unwrap();
+        self.peek_token = self.lexer.next().unwrap();
     }
 
     fn parse_program(&mut self) -> Option<Program> {
@@ -46,6 +46,7 @@ impl Parser {
         match cur_token {
             Token::Let => self.parse_let_statement(),
             Token::Return => self.parse_return_statement(),
+            Token::Ident(_value) => self.parse_expression_statement(),
             _ => None,
         }
     }
@@ -119,6 +120,59 @@ impl Parser {
 
         Some(Statement::Return(ReturnStatement { value: expr }))
     }
+
+    fn parse_expression_statement(&mut self) -> Option<Statement> {
+        //self.next_token();
+
+        let stmt = Statement::Expression(
+            match &self.cur_token {
+                Token::Int(_value) => {
+                    self.next_token();
+                    match &self.cur_token {
+                        Token::LessThan => todo!(),
+                        Token::GreaterThan => todo!(),
+                        Token::Plus => todo!(),
+                        Token::Minus => todo!(),
+                        Token::Asterisk => todo!(),
+                        Token::ForwardSlash => todo!(),
+                        _ => {
+                            self.errors.push(format!(
+                                "expected next token to be an infix Operator, got {:?}",
+                                self.peek_token
+                            ));        
+                            return None;
+                        }
+                    }
+                },
+                Token::Ident(value) => {
+                    println!("do we get here?");
+                    Expression::Identifier(Identifier { name: value.to_string() })
+                },
+
+                _ => {
+
+                    println!("or do we end up here?");
+                    self.errors.push(format!(
+                        "expected next token to be an Expression, got {:?}",
+                        self.cur_token
+                    ));
+
+                    return None;
+                }
+            }
+        );
+        Some(stmt)
+    }
+}
+
+pub enum Precedence {
+    Lowest,
+    Equals,      // ==
+    LessGreater, // < or >
+    Sum,         // +
+    Product,     // *
+    Prefix,      // -X or !X
+    Call         // myFunc(x)
 }
 
 #[cfg(test)]
@@ -128,13 +182,11 @@ mod test {
 
     #[test]
     fn test_let_statements() {
-        let input = String::from(
-            "
+        let input = String::from("
             let x = 5;
             let y = 10;
             let foobar = 838383;
-        ",
-        );
+        ");
 
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
@@ -198,13 +250,11 @@ mod test {
 
     #[test]
     fn test_return_statements() {
-        let input = String::from(
-            "
-        return 5;
-        return 10;
-        return 9933322;
-        ",
-        );
+        let input = String::from("
+            return 5;
+            return 10;
+            return 9933322;
+        ");
 
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
@@ -231,7 +281,44 @@ mod test {
                         _ => panic!("Expected Literal"),
                     }
                 }
-                _ => panic!("Expected LetStatement"),
+                _ => panic!("Expected ReturnStatement"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_identifier_expressions() {
+        let input = String::from("
+            foobar;
+            barbaz;
+            quux;
+        ");
+
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+
+        let program = p.parse_program().unwrap();
+
+        let stmt_len = program.statements.len();
+        assert_eq!(
+            stmt_len, 3,
+            "program.statements does not contain 3 statements. got {}",
+            stmt_len
+        );
+
+        let tests = vec![("foobar"), ("barbaz"), ("quux")];
+
+        for (i, literal_value) in tests.iter().enumerate() {
+            match &program.statements[i] {
+                Statement::Expression(expression_stmt) => {
+                    match &expression_stmt {
+                        Expression::Identifier(ident) => {
+                            assert_eq!(ident.name, *literal_value);
+                        }
+                        _ => panic!("Expected IdentifierExpression"),
+                    }
+                }
+                _ => panic!("Expected ExpressionStatement"),
             }
         }
     }
